@@ -1,8 +1,9 @@
 <?php
+require "functions.php";
 libxml_use_internal_errors(true);
 libxml_clear_errors();
 error_reporting(0);
-class crawl
+class crawl 
 {
 	public function __construct($url)
 	{
@@ -52,16 +53,33 @@ class crawl
 
 }
 
-class parser
+class parser extends allfunctions
 {
+	public static $dom;
 	public function __construct($url)
 	{
+		$this->url=$url;
 		$this->filename=sha1($url);
 	}
 	public function fopen($callback)
 	{
 		$this->tree=array();
 		$this->tree=$callback($this->filename,$this->tree);
+	}
+	public function getlinks()
+	{
+		$dom=parser::$dom;
+		$this->anchor=array();
+
+		foreach ($dom->getElementsByTagName('a') as $link)
+			{
+				$anchor=$this->VERIFYURL($link->getAttribute('href'),$this->DOMAIN($this->url,1));
+				if(isset($anchor)&&trim($anchor)!="")
+				{
+					array_push($this->anchor,$anchor);
+				}
+
+			}
 	}
 }
 
@@ -115,6 +133,7 @@ $page2->fopen(function($file,$tree){
 	$html=file_get_contents("./".$file,true);
 	
 	$dom=new DOMDocument;
+	parser::$dom=$dom;
 	$dom->loadHTMl($html);
 	foreach ($dom->getElementsByTagName('*') as $htmltag)
 	{
@@ -133,7 +152,7 @@ $page2->fopen(function($file,$tree){
 
 
 ///diffrence between array
-print_r($page->tree);print_r($page2->tree);
+// print_r($page->tree);print_r($page2->tree);
 // $result=array_diff($page->tree,$page2->tree);
 $result=array_diff_assoc($page->tree,$page2->tree);
 if(!empty($result))
@@ -145,5 +164,7 @@ else
 {
 	echo "array same";
 }
-
+/////this is for exctacting urls 
+$page->getlinks();
+ print_r(array_unique($page->anchor));
 ?>
